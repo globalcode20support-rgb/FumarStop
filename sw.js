@@ -1,67 +1,40 @@
-// Service Worker - Mis Medicinas
-const CACHE_NAME = 'medicinas-v1';
+const CACHE_NAME = 'fumarstop-v2';
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
-self.addEventListener('install', e => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(self.clients.claim());
-});
-
-// Recibir mensaje desde la app para programar alarma
 self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'SCHEDULE_ALARM') {
-    const { delay, title, body, tag } = e.data;
-    setTimeout(() => {
-      self.registration.showNotification(title, {
-        body,
-        tag,
-        icon: 'icon.png',
-        badge: 'icon.png',
-        vibrate: [500, 200, 500, 200, 500],
-        requireInteraction: true,
-        actions: [
-          { action: 'taken', title: '✅ Tomada' },
-          { action: 'snooze', title: '⏰ +10 min' }
-        ]
-      });
-    }, delay);
+  if (e.data?.type === 'ALARM') {
+    const { tag, title, body } = e.data;
+    self.registration.showNotification(title, {
+      body,
+      tag,
+      vibrate: [800, 300, 800, 300, 800, 300, 1000],
+      requireInteraction: true,
+      actions: [
+        { action: 'taken', title: '✅ Tomada' },
+        { action: 'snooze', title: '⏰ +10 min' }
+      ]
+    });
   }
 });
 
-// Manejar clicks en notificaciones
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  if (e.action === 'taken') {
-    // Notificar a la app que se marcó como tomada
-    e.waitUntil(
-      self.clients.matchAll({ type: 'window' }).then(clients => {
-        clients.forEach(client => {
-          client.postMessage({ type: 'MEDICINE_TAKEN', tag: e.notification.tag });
-        });
-        if (clients.length === 0) {
-          self.clients.openWindow('./');
-        }
-      })
-    );
-  } else if (e.action === 'snooze') {
-    // Posponer 10 minutos
+  if (e.action === 'snooze') {
     setTimeout(() => {
-      self.registration.showNotification(e.notification.title + ' (recordatorio)', {
+      self.registration.showNotification('💊 Recordatorio — ' + e.notification.body.split('—')[0], {
         body: e.notification.body,
-        tag: e.notification.tag + '-snooze',
-        icon: 'icon.png',
-        vibrate: [500, 200, 500],
+        tag: e.notification.tag + '-s',
+        vibrate: [800, 300, 800, 300, 800],
         requireInteraction: true
       });
     }, 10 * 60 * 1000);
   } else {
-    // Click en la notificación → abrir app
     e.waitUntil(
       self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(c => c.postMessage({ type: 'TAKEN', tag: e.notification.tag }));
         if (clients.length > 0) clients[0].focus();
-        else self.clients.openWindow('./');
+        else return self.clients.openWindow('./');
       })
     );
   }
