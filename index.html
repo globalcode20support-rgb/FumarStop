@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>💊 Mis Medicinas</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0066ff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Medicinas">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f0f4ff;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,102,255,0.10);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #0066ff 0%, #003fb3 100%);
+            padding: 24px 20px 20px;
+            color: white;
+            text-align: center;
+        }
+        .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+        .clock {
+            font-size: 42px;
+            font-weight: 800;
+            font-family: monospace;
+            margin: 10px 0 4px;
+            letter-spacing: 2px;
+        }
+        .body { padding: 20px; }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: 6px;
+            background: #f0f4ff;
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1; padding: 10px 6px;
+            border: none; border-radius: 9px;
+            font-size: 11px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .tab-btn.active { background: white; color: #0066ff; box-shadow: 0 2px 8px rgba(0,102,255,0.15); }
+        .tab-btn.inactive { background: transparent; color: #888; }
+
+        /* STATUS BAR */
+        .status-bar {
+            background: #e8f0ff;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid #0066ff;
+            font-size: 13px;
+            color: #0066ff;
+            font-weight: 600;
+        }
+
+        /* STATS */
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card {
+            background: #f8faff;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            border: 1.5px solid #e0eaff;
+        }
+        .stat-number { font-size: 28px; font-weight: 800; color: #0066ff; }
+        .stat-label { font-size: 11px; color: #888; margin-top: 2px; }
+
+        /* NOTIFICATION TOGGLE */
+        .notif-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px;
+            background: #f8faff;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1.5px solid #e0eaff;
+        }
+        .notif-label { font-size: 13px; font-weight: 600; color: #333; }
+        .notif-status { font-size: 11px; color: #888; margin-top: 2px; }
+        .toggle {
+            width: 52px; height: 30px;
+            background: #ccc;
+            border: none; border-radius: 15px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 26px; height: 26px;
+            background: white;
+            border-radius: 50%;
+            top: 2px; left: 2px;
+            transition: left 0.3s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .toggle.on { background: #22c55e; }
+        .toggle.on::after { left: 24px; }
+
+        /* SCHEDULE */
+        .section-title {
+            font-size: 12px; font-weight: 700;
+            color: #555; letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .schedule-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+        .schedule-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1.5px solid transparent;
+            user-select: none;
+        }
+        .schedule-item.pending {
+            background: #f8faff;
+            border-color: #e0eaff;
+        }
+        .schedule-item.done {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        .schedule-item.next {
+            background: #fff7ed;
+            border-color: #fed7aa;
+        }
+        .time-text {
+            font-size: 18px; font-weight: 800;
+            font-family: monospace;
+            color: #222;
+        }
+        .time-label {
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        .pending .time-label { color: #888; }
+        .done .time-label { color: #22c55e; }
+        .next .time-label { color: #f97316; font-weight: 600; }
+        .check-circle {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid #c0d0f0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .done .check-circle {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+        .next .check-circle { border-color: #f97316; }
+
+        /* ACTION BUTTONS */
+        .actions { display: flex; gap: 10px; }
+        .btn {
+            flex: 1; padding: 14px;
+            border-radius: 12px;
+            font-size: 13px; font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-outline {
+            background: white;
+            color: #0066ff;
+            border: 2px solid #0066ff;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #0066ff, #003fb3);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,102,255,0.3);
+        }
+        .btn:active { transform: scale(0.97); }
+
+        /* CALENDAR */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+        .cal-day {
+            aspect-ratio: 1;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            border-radius: 10px;
+            border: 2px solid #e0eaff;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafbff;
+        }
+        .cal-day.complete { background: #f0fdf4; border-color: #bbf7d0; }
+        .cal-day.partial { background: #e8f0ff; border-color: #a0b8ff; }
+        .cal-day.today { box-shadow: 0 0 0 2px #0066ff; }
+        .cal-day-num { font-size: 14px; font-weight: 800; color: #222; }
+        .cal-day-prog { font-size: 10px; color: #888; margin-top: 2px; }
+
+        /* INSTALL BANNER */
+        .install-banner {
+            background: linear-gradient(135deg, #0066ff, #003fb3);
+            color: white;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+        .install-banner.show { display: flex; }
+        .install-banner p { flex: 1; font-size: 12px; line-height: 1.5; }
+        .install-banner strong { font-size: 13px; display: block; margin-bottom: 2px; }
+        .btn-install {
+            background: white;
+            color: #0066ff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* PERMISSION BANNER */
+        .perm-banner {
+            background: #fff7ed;
+            border: 1.5px solid #fed7aa;
+            color: #c2410c;
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .perm-banner.show { display: block; }
+        .perm-banner strong { font-size: 13px; display: block; margin-bottom: 4px; }
+        .perm-banner p { font-size: 12px; line-height: 1.5; }
+        .btn-perm {
+            margin-top: 10px;
+            background: #f97316;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <div class="clock" id="clock">--:--</div>
+        <h1>💊 Mis Medicinas</h1>
+        <p>Crisina / Todacitán · 25 días</p>
+    </div>
+
+    <div class="body">
+
+        <!-- INSTALL BANNER -->
+        <div class="install-banner" id="installBanner">
+            <span style="font-size:28px">📲</span>
+            <p><strong>Instala la app</strong>Para recibir alarmas en segundo plano, instala esta página como app.</p>
+            <button class="btn-install" id="installBtn">Instalar</button>
+        </div>
+
+        <!-- PERMISSION BANNER -->
+        <div class="perm-banner" id="permBanner">
+            <strong>⚠️ Notificaciones desactivadas</strong>
+            <p>Para recibir alarmas aunque la app esté cerrada, necesitas activar los permisos de notificación.</p>
+            <button class="btn-perm" onclick="requestPermission()">Activar notificaciones</button>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" id="tabHoy" onclick="switchTab('hoy')">HOY</button>
+            <button class="tab-btn inactive" id="tabCal" onclick="switchTab('cal')">CALENDARIO</button>
+        </div>
+
+        <!-- TAB HOY -->
+        <div id="contentHoy">
+            <div class="status-bar" id="statusBar">Cargando...</div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="doneCount">0</div>
+                    <div class="stat-label">Tomadas hoy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCount">-</div>
+                    <div class="stat-label">Total hoy</div>
+                </div>
+            </div>
+
+            <div class="notif-row">
+                <div>
+                    <div class="notif-label">🔔 Alarmas en segundo plano</div>
+                    <div class="notif-status" id="notifStatus">Cargando...</div>
+                </div>
+                <button class="toggle" id="notifToggle" onclick="toggleNotifications()"></button>
+            </div>
+
+            <div class="section-title">📅 Horarios de hoy</div>
+            <div class="schedule-list" id="scheduleList"></div>
+
+            <div class="actions">
+                <button class="btn btn-outline" onclick="resetDay()">↻ Reiniciar</button>
+                <button class="btn btn-primary" onclick="testAlarm()">🔔 Probar alarma</button>
+            </div>
+        </div>
+
+        <!-- TAB CALENDARIO -->
+        <div id="contentCal" style="display:none">
+            <div class="section-title">📆 Todos los días (25)</div>
+            <div class="calendar-grid" id="calGrid"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// ─── DATOS ───────────────────────────────────────────────────────────────────
+const schedules = {
+    1: [9, 11, 13, 15, 17, 19],
+    2: [9, 11, 13, 15, 17, 19],
+    3: [9, 11, 13, 15, 17, 19],
+    4: [9, 11, 13, 15, 17, 19],
+    5: [8.5, 11, 13.5, 15, 18.5],
+    6: [8.5, 11, 13.5, 15, 18.5],
+    7: [8.5, 11, 13.5, 15, 18.5],
+    8: [8.5, 11, 13.5, 15, 18.5],
+    9: [8.5, 11, 13.5, 16, 18.5],
+    10: [8.5, 11, 13.5, 16, 18.5],
+    11: [8.5, 11, 13.5, 16, 18.5],
+    12: [8.5, 11, 13.5, 16, 18.5],
+    13: [9, 12, 15, 18],
+    14: [9, 12, 15, 18],
+    15: [9, 12, 15, 18],
+    16: [9, 12, 15, 18],
+    17: [9, 14, 19],
+    18: [9, 14, 19],
+    19: [9, 14, 19],
+    20: [9, 14, 19],
+    21: [9, 19],
+    22: [9, 19],
+    23: [9, 19],
+    24: [9],
+    25: [9]
+};
+
+// ─── ESTADO ──────────────────────────────────────────────────────────────────
+let completed = JSON.parse(localStorage.getItem('completed') || '{}');
+let notifEnabled = localStorage.getItem('notifEnabled') !== 'false';
+let startDate = localStorage.getItem('startDate');
+if (!startDate) {
+    startDate = new Date().toISOString().split('T')[0];
+    localStorage.setItem('startDate', startDate);
+}
+
+let deferredInstallPrompt = null;
+let scheduledTimeouts = [];
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function toStr(hour) {
+    const h = Math.floor(hour);
+    const m = Math.round((hour % 1) * 60);
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function getCurrentDay() {
+    const start = new Date(startDate);
+    const today = new Date();
+    start.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    const diff = Math.floor((today - start) / 86400000) + 1;
+    return Math.min(Math.max(diff, 1), 25);
+}
+
+function getNextDose(dayNum) {
+    const sched = schedules[dayNum];
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    for (const h of sched) {
+        const mins = Math.floor(h) * 60 + Math.round((h % 1) * 60);
+        if (mins > nowMins) return toStr(h);
+    }
+    return null;
+}
+
+function saveState() {
+    localStorage.setItem('completed', JSON.stringify(completed));
+}
+
+// ─── SERVICE WORKER & NOTIFICACIONES ─────────────────────────────────────────
+let swRegistration = null;
+
+async function initSW() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+        swRegistration = await navigator.serviceWorker.register('./sw.js');
+        navigator.serviceWorker.addEventListener('message', e => {
+            if (e.data?.type === 'MEDICINE_TAKEN') {
+                const day = getCurrentDay();
+                // Intentar marcar la dosis correspondiente
+                updateUI();
+            }
+        });
+    } catch(err) {
+        console.warn('SW no disponible:', err);
+    }
+}
+
+async function requestPermission() {
+    const result = await Notification.requestPermission();
+    updateNotifStatus();
+    if (result === 'granted' && notifEnabled) {
+        scheduleAllAlarms();
+    }
+    return result;
+}
+
+function updateNotifStatus() {
+    const status = document.getElementById('notifStatus');
+    const toggle = document.getElementById('notifToggle');
+    const perm = Notification.permission;
+    const permBanner = document.getElementById('permBanner');
+
+    if (perm === 'granted' && notifEnabled) {
+        status.textContent = '✅ Activas — sonarán aunque cierres la app';
+        status.style.color = '#22c55e';
+        toggle.classList.add('on');
+        toggle.classList.remove('off');
+        permBanner.classList.remove('show');
+    } else if (perm === 'denied') {
+        status.textContent = '❌ Bloqueadas — actívalas en Ajustes del móvil';
+        status.style.color = '#ef4444';
+        toggle.classList.remove('on');
+        permBanner.classList.remove('show');
+    } else if (perm === 'default') {
+        status.textContent = '⚠️ Necesitas activar los permisos';
+        status.style.color = '#f97316';
+        toggle.classList.remove('on');
+        permBanner.classList.add('show');
+    } else {
+        status.textContent = '🔕 Desactivadas manualmente';
+        status.style.color = '#888';
+        toggle.classList.remove('on');
+    }
+}
+
+async function toggleNotifications() {
+    if (!notifEnabled) {
+        // Activar
+        if (Notification.permission === 'default') {
+            const r = await requestPermission();
+            if (r !== 'granted') return;
+        }
+        notifEnabled = true;
+        scheduleAllAlarms();
+    } else {
+        // Desactivar
+        notifEnabled = false;
+        clearAllAlarms();
+    }
+    localStorage.setItem('notifEnabled', notifEnabled);
+    updateNotifStatus();
+}
+
+function clearAllAlarms() {
+    scheduledTimeouts.forEach(clearTimeout);
+    scheduledTimeouts = [];
+}
+
+function scheduleAllAlarms() {
+    clearAllAlarms();
+    if (!swRegistration || Notification.permission !== 'granted' || !notifEnabled) return;
+
+    const dayNum = getCurrentDay();
+    const sched = schedules[dayNum];
+    const now = new Date();
+
+    sched.forEach(hour => {
+        const timeStr = toStr(hour);
+        const key = `d${dayNum}-${timeStr}`;
+        if (completed[key]) return; // ya tomada
+
+        const target = new Date();
+        target.setHours(Math.floor(hour), Math.round((hour % 1) * 60), 0, 0);
+        const delay = target - now;
+        if (delay < 0) return; // ya pasó
+
+        const tid = setTimeout(() => {
+            if (!completed[key] && notifEnabled) {
+                swRegistration.active?.postMessage({
+                    type: 'SCHEDULE_ALARM',
+                    delay: 0,
+                    title: '💊 Hora de tomar la medicina',
+                    body: `Son las ${timeStr} — Crisina / Todacitán (Día ${dayNum})`,
+                    tag: key
+                });
+                // Fallback directo si SW está activo
+                new Notification('💊 Hora de tomar la medicina', {
+                    body: `Son las ${timeStr} — Crisina / Todacitán (Día ${dayNum})`,
+                    tag: key,
+                    requireInteraction: true,
+                    vibrate: [500, 200, 500, 200, 500]
+                });
+            }
+        }, delay);
+        scheduledTimeouts.push(tid);
+    });
+}
+
+function testAlarm() {
+    if (Notification.permission !== 'granted') {
+        requestPermission().then(r => {
+            if (r === 'granted') doTestAlarm();
+        });
+    } else {
+        doTestAlarm();
+    }
+}
+
+function doTestAlarm() {
+    new Notification('💊 Alarma de prueba', {
+        body: `Esta alarma sonará aunque la app esté en segundo plano`,
+        requireInteraction: true,
+        vibrate: [500, 200, 500, 200, 500]
+    });
+}
+
+// ─── UI ───────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+    document.getElementById('tabHoy').className = tab === 'hoy' ? 'tab-btn active' : 'tab-btn inactive';
+    document.getElementById('tabCal').className = tab === 'cal' ? 'tab-btn active' : 'tab-btn inactive';
+    document.getElementById('contentHoy').style.display = tab === 'hoy' ? 'block' : 'none';
+    document.getElementById('contentCal').style.display = tab === 'cal' ? 'block' : 'none';
+    if (tab === 'cal') renderCalendar();
+}
+
+function toggleDose(key) {
+    completed[key] = !completed[key];
+    saveState();
+    scheduleAllAlarms(); // reprogramar (excluye ya tomadas)
+    updateUI();
+}
+
+function resetDay() {
+    const dayNum = getCurrentDay();
+    const sched = schedules[dayNum];
+    sched.forEach(h => { delete completed[`d${dayNum}-${toStr(h)}`]; });
+    saveState();
+    scheduleAllAlarms();
+    updateUI();
+}
+
+function updateUI() {
+    const dayNum = getCurrentDay();
+    const sched = schedules[dayNum];
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+
+    // Clock
+    document.getElementById('clock').textContent =
+        `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    // Status
+    const nextDose = getNextDose(dayNum);
+    const doneToday = sched.filter(h => completed[`d${dayNum}-${toStr(h)}`]).length;
+    let statusText = `Día ${dayNum} de 25`;
+    if (nextDose) statusText += ` · Próxima dosis a las ${nextDose}`;
+    else statusText += ` · ¡Todas las dosis completadas! 🎉`;
+    document.getElementById('statusBar').textContent = statusText;
+
+    // Stats
+    document.getElementById('doneCount').textContent = doneToday;
+    document.getElementById('totalCount').textContent = sched.length;
+
+    // Schedule list
+    const list = document.getElementById('scheduleList');
+    list.innerHTML = '';
+    let nextMarked = false;
+
+    sched.forEach(hour => {
+        const timeStr = toStr(hour);
+        const key = `d${dayNum}-${timeStr}`;
+        const isDone = !!completed[key];
+        const doseMins = Math.floor(hour) * 60 + Math.round((hour % 1) * 60);
+        const isPast = doseMins <= nowMins;
+        const isNext = !isDone && !nextMarked && !isPast === false && doseMins > nowMins;
+        
+        // Marcar la próxima pendiente
+        let cls = 'pending';
+        let labelText = isPast && !isDone ? '⚠️ Pendiente (pasada)' : 'Pendiente';
+        if (isDone) { cls = 'done'; labelText = '✓ Tomada'; }
+        else if (!nextMarked && doseMins > nowMins) { cls = 'next'; labelText = '⏰ Próxima'; nextMarked = true; }
+        else if (isPast && !isDone) { cls = 'pending'; }
+
+        const item = document.createElement('div');
+        item.className = `schedule-item ${cls}`;
+        item.onclick = () => toggleDose(key);
+        item.innerHTML = `
+            <div>
+                <div class="time-text">${timeStr}</div>
+                <div class="time-label">${labelText}</div>
+            </div>
+            <div class="check-circle">${isDone ? '✓' : ''}</div>
+        `;
+        list.appendChild(item);
+    });
+
+    updateNotifStatus();
+}
+
+function renderCalendar() {
+    const dayNum = getCurrentDay();
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    for (let d = 1; d <= 25; d++) {
+        const sched = schedules[d];
+        const done = sched.filter(h => completed[`d${d}-${toStr(h)}`]).length;
+        const cls = done === 0 ? '' : done === sched.length ? 'complete' : 'partial';
+        const todayCls = d === dayNum ? 'today' : '';
+        const el = document.createElement('div');
+        el.className = `cal-day ${cls} ${todayCls}`;
+        el.innerHTML = `<div class="cal-day-num">${d}</div><div class="cal-day-prog">${done}/${sched.length}</div>`;
+        grid.appendChild(el);
+    }
+}
+
+// ─── PWA INSTALL ──────────────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.getElementById('installBanner').classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+        document.getElementById('installBanner').classList.remove('show');
+    }
+    deferredInstallPrompt = null;
+});
+
+window.addEventListener('appinstalled', () => {
+    document.getElementById('installBanner').classList.remove('show');
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+initSW().then(() => {
+    updateUI();
+    if (Notification.permission === 'granted' && notifEnabled) {
+        scheduleAllAlarms();
+    }
+});
+
+// Actualizar reloj y reprogramar alarmas cada minuto
+setInterval(() => {
+    updateUI();
+    if (notifEnabled && Notification.permission === 'granted') {
+        scheduleAllAlarms();
+    }
+}, 60000);
+
+// Actualizar solo reloj cada segundo
+setInterval(() => {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+        `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}, 1000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "Mis Medicinas",
+  "short_name": "Medicinas",
+  "description": "Recordatorio de medicación - Crisina/Todacitán",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0066ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
