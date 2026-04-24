@@ -1,17 +1,17 @@
 {
-  "name": "Mis Medicinas",
-  "short_name": "Medicinas",
-  "description": "Recordatorio de medicación - Crisina/Todacitán",
+  "name": "FumarStop",
+  "short_name": "FumarStop",
+  "description": "Recordatorio de medicación para dejar de fumar",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0066ff",
+  "background_color": "#0a0a1a",
+  "theme_color": "#6c63ff",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%236c63ff'/><text y='130' x='30' font-size='120'>💊</text></svg>",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]
